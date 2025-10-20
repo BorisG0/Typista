@@ -16,6 +16,10 @@
   .animate-caret {
     animation: caret-blink 1s steps(1, end) infinite;
   }
+
+  .animate-pulse-slow {
+    animation: pulse-slow 1.2s ease-in-out infinite;
+  }
 }
 
 @layer components {
@@ -38,6 +42,16 @@
     border-radius: 9999px;
     background-color: currentColor;
     animation: caret-blink 1s steps(1, end) infinite;
+  }
+}
+
+@keyframes pulse-slow {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
   }
 }
 

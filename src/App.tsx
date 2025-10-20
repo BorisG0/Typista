@@ -192,14 +192,28 @@ const App = () => {
     return Math.max(0, Math.round(value)).toString()
   }
 
-  const liveWpmDisplay = startTimestamp ? formatWpmValue(liveWpm) : '--'
-  const finalWpmDisplay = formatWpmValue(finalWpm)
+  const showFinal = finalWpm != null
+  const typingStarted = startTimestamp != null && charactersTyped > 0
+  const wpmDisplay = showFinal
+    ? formatWpmValue(finalWpm)
+    : typingStarted
+      ? formatWpmValue(liveWpm)
+      : '--'
 
   return (
     <main className="flex min-h-screen flex-col bg-black text-white">
-      <header className="flex h-16 items-center gap-6 border-b border-white/10 bg-black/95 px-6 text-xs uppercase tracking-[0.3em]">
+      <header className="flex h-16 items-center border-b border-white/10 bg-black/95 px-6 text-xs uppercase tracking-[0.3em]">
         <span className="text-gray-400">Typist</span>
-        <div className="ml-auto flex items-center gap-6">
+        <div className="flex flex-1 items-center justify-center">
+          <span
+            className={`text-sm tracking-[0.25em] ${
+              showFinal || !typingStarted ? 'text-white' : 'text-white animate-pulse-slow'
+            }`}
+          >
+            {wpmDisplay} WPM
+          </span>
+        </div>
+        <div className="flex items-center gap-6">
           <div className="flex items-center gap-3 text-[0.65rem] tracking-[0.2em] text-gray-500">
             <span>Line Width</span>
             <div className="flex items-center gap-1 rounded-full border border-white/15 px-2 py-1 text-white">
@@ -225,16 +239,6 @@ const App = () => {
                 +
               </button>
             </div>
-          </div>
-          <div className="flex items-center gap-4 text-[0.65rem] tracking-[0.2em] text-gray-500">
-            <span className="flex items-center gap-2">
-              <span>Live</span>
-              <span className="text-white">{liveWpmDisplay}</span>
-            </span>
-            <span className="flex items-center gap-2">
-              <span>Final</span>
-              <span className="text-white">{finalWpmDisplay}</span>
-            </span>
           </div>
           <div className="flex gap-3 text-[0.65rem] tracking-[0.25em]">
             <button
