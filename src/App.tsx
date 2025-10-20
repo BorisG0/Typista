@@ -71,10 +71,10 @@ const App = () => {
 
       const styles =
         state === 'correct'
-          ? 'text-emerald-400'
+          ? 'text-white'
           : state === 'incorrect'
-            ? 'bg-rose-600/20 text-rose-300'
-            : 'text-slate-600'
+            ? 'text-red-500'
+            : 'text-gray-500'
 
       const displayChar = char === ' ' ? ' ' : char
 
@@ -125,27 +125,27 @@ const App = () => {
   }
 
   return (
-    <main className="flex min-h-screen flex-col bg-slate-950 text-slate-300">
-      <header className="flex h-16 items-center justify-between border-b border-slate-900/60 bg-slate-950/80 px-6 text-sm tracking-wide">
-        <span className="text-xs uppercase tracking-[0.4em] text-slate-600">Typist</span>
-        <div className="flex items-center gap-4 text-[0.7rem] uppercase tracking-[0.3em] text-slate-600">
+    <main className="flex min-h-screen flex-col bg-black text-white">
+      <header className="flex h-16 items-center justify-between border-b border-white/10 bg-black/95 px-6 text-xs uppercase tracking-[0.3em]">
+        <span className="text-gray-400">Typist</span>
+        <div className="flex items-center gap-3 text-[0.65rem] tracking-[0.25em] text-gray-500">
           <span>Line Width</span>
-          <div className="flex items-center gap-1 rounded-full border border-slate-800/80 px-2 py-1 text-slate-300 shadow-sm">
+          <div className="flex items-center gap-1 rounded-full border border-white/15 px-2 py-1 text-white">
             <button
               type="button"
-              className="rounded-full px-2 text-base text-slate-400 transition hover:text-slate-200 disabled:opacity-30"
+              className="rounded-full px-2 text-base text-gray-400 transition hover:text-white disabled:opacity-30"
               onClick={() => adjustLineLimit(-LINE_LIMIT_STEP)}
               disabled={lineLimit <= LINE_LIMIT_MIN}
               aria-label="Decrease line width"
             >
               &minus;
             </button>
-            <span className="min-w-[3.5rem] text-center text-xs tracking-[0.2em] text-slate-200">
+            <span className="min-w-[3.5rem] text-center text-[0.65rem] tracking-[0.2em] text-white">
               {lineLimit}ch
             </span>
             <button
               type="button"
-              className="rounded-full px-2 text-base text-slate-400 transition hover:text-slate-200 disabled:opacity-30"
+              className="rounded-full px-2 text-base text-gray-400 transition hover:text-white disabled:opacity-30"
               onClick={() => adjustLineLimit(LINE_LIMIT_STEP)}
               disabled={lineLimit >= LINE_LIMIT_MAX}
               aria-label="Increase line width"
@@ -154,17 +154,17 @@ const App = () => {
             </button>
           </div>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 text-[0.65rem] tracking-[0.25em]">
           <button
             type="button"
-            className="rounded-full border border-slate-800/80 px-4 py-1.5 text-slate-200 transition hover:border-slate-700 hover:bg-slate-800/60"
+            className="rounded-full border border-white/20 px-4 py-1.5 text-white transition hover:bg-white/10"
             onClick={handleRestart}
           >
             Restart
           </button>
           <button
             type="button"
-            className="rounded-full border border-emerald-400/50 px-4 py-1.5 text-emerald-300 transition hover:border-emerald-400 hover:bg-emerald-400/10"
+            className="rounded-full border border-white px-4 py-1.5 text-black transition hover:bg-white/80 hover:text-black bg-white/90"
             onClick={handleCustomText}
           >
             Custom Text
@@ -178,7 +178,7 @@ const App = () => {
         role="presentation"
       >
         <div
-          className="relative mx-auto text-2xl font-medium tracking-wide text-slate-500 leading-[1.6] break-words whitespace-pre-wrap"
+          className="relative mx-auto text-2xl tracking-wide text-gray-500 leading-[1.6] break-words whitespace-pre-wrap"
           style={{ maxWidth: `${lineLimit}ch` }}
         >
           <textarea
@@ -192,7 +192,7 @@ const App = () => {
         </div>
       </section>
 
-      <div className="flex h-12 items-center justify-center text-xs uppercase tracking-[0.3em] text-slate-700">
+      <div className="flex h-12 items-center justify-center text-xs uppercase tracking-[0.3em] text-gray-600">
         {typedText.length} / {targetText.length} characters
       </div>
     </main>
