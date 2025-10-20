@@ -89,13 +89,7 @@ const App = () => {
       characters.splice(
         caretIndex,
         0,
-        <span
-          key="caret"
-          className="relative inline-block w-0 align-baseline"
-          aria-hidden
-        >
-          <span className="absolute left-0 top-1/2 h-[1.25em] w-[2px] -translate-y-1/2 rounded-full bg-emerald-400 animate-caret" />
-        </span>,
+        <span key="caret" className="caret-cursor" aria-hidden />,
       )
     }
 
