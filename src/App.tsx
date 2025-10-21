@@ -1,39 +1,39 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import Toolbar from './components/Toolbar'
 import TypingCanvas from './components/TypingCanvas'
+import type { ChoiceDisplay } from './components/TypingCanvas'
 import { useWpm } from './hooks/useWpm'
 import {
-  DEFAULT_TEXT,
+  BRANCHING_ROOT,
   LINE_LIMIT_MAX,
   LINE_LIMIT_MIN,
   LINE_LIMIT_STEP,
+  createSuccessorPreview,
   normalizePrompt,
 } from './utils/typing'
+import type { TypingNode } from './utils/typing'
 
 const formatWpmValue = (value: number | null) =>
   value == null ? '--' : Math.max(0, Math.round(value)).toString()
 
 const App = () => {
-  const [targetText, setTargetText] = useState(() => normalizePrompt(DEFAULT_TEXT))
+  const [currentNode, setCurrentNode] = useState<TypingNode>(BRANCHING_ROOT)
   const [typedText, setTypedText] = useState('')
+  const [choiceBuffer, setChoiceBuffer] = useState('')
   const [lineLimit, setLineLimit] = useState(48)
+  const [totalTyped, setTotalTyped] = useState(0)
   const inputRef = useRef<HTMLTextAreaElement | null>(null)
 
   useEffect(() => {
     inputRef.current?.focus()
-  }, [])
+  }, [currentNode])
 
-  const charactersTyped = typedText.length
-  const isComplete = targetText.length > 0 && typedText === targetText
+  const isNodeComplete = typedText.length >= currentNode.text.length
+  const successors = currentNode.successors
+  const isGraphComplete = isNodeComplete && successors.length === 0 && choiceBuffer.length === 0
 
-  const { liveWpm, finalWpm, typingStarted, reset: resetWpm } = useWpm(charactersTyped, isComplete)
-
-  useEffect(() => {
-    if (charactersTyped === 0) {
-      resetWpm()
-    }
-  }, [charactersTyped, resetWpm])
+  const { liveWpm, finalWpm, typingStarted, reset: resetWpm } = useWpm(totalTyped, isGraphComplete)
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -44,31 +44,78 @@ const App = () => {
       if (event.key === 'Escape') {
         event.preventDefault()
         setTypedText('')
+        setChoiceBuffer('')
+        setTotalTyped(0)
         resetWpm()
         return
       }
 
       if (event.key === 'Backspace') {
         event.preventDefault()
-        setTypedText((previous) => previous.slice(0, -1))
+
+        if (choiceBuffer.length > 0) {
+          setChoiceBuffer(choiceBuffer.slice(0, -1))
+          setTotalTyped((count) => Math.max(0, count - 1))
+          return
+        }
+
+        if (typedText.length > 0) {
+          setTypedText(typedText.slice(0, -1))
+          setTotalTyped((count) => Math.max(0, count - 1))
+        }
         return
       }
 
-      if (event.key.length === 1) {
+      if (event.key.length !== 1) {
+        return
+      }
+
+      const char = event.key
+
+      if (typedText.length < currentNode.text.length) {
         event.preventDefault()
-        setTypedText((previous) => {
-          if (previous.length >= targetText.length) return previous
-          return `${previous}${event.key}`
-        })
+        setTypedText(`${typedText}${char}`)
+        setTotalTyped((count) => count + 1)
+        return
+      }
+
+      if (successors.length === 0) {
+        event.preventDefault()
+        return
+      }
+
+      event.preventDefault()
+      const nextBuffer = `${choiceBuffer}${char}`
+      setChoiceBuffer(nextBuffer)
+      setTotalTyped((count) => count + 1)
+
+      const matchedNode = successors.find(
+        (successor) => createSuccessorPreview(successor.text) === nextBuffer,
+      )
+
+      if (matchedNode) {
+        setCurrentNode(matchedNode)
+        setTypedText(nextBuffer)
+        setChoiceBuffer('')
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [resetWpm, targetText])
+  }, [choiceBuffer, currentNode, resetWpm, successors, typedText])
+
+  const handleLineLimitChange = (delta: number) => {
+    setLineLimit((previous) =>
+      Math.min(LINE_LIMIT_MAX, Math.max(LINE_LIMIT_MIN, previous + delta)),
+    )
+    inputRef.current?.focus()
+  }
 
   const handleRestart = () => {
+    setCurrentNode(BRANCHING_ROOT)
     setTypedText('')
+    setChoiceBuffer('')
+    setTotalTyped(0)
     resetWpm()
     inputRef.current?.focus()
   }
@@ -84,21 +131,29 @@ const App = () => {
       return
     }
 
-    setTargetText(normalized)
-    setTypedText('')
-    resetWpm()
-    inputRef.current?.focus()
-  }
+    const customNode: TypingNode = {
+      id: 'custom',
+      text: normalized,
+      successors: [],
+    }
 
-  const handleLineLimitChange = (delta: number) => {
-    setLineLimit((previous) =>
-      Math.min(LINE_LIMIT_MAX, Math.max(LINE_LIMIT_MIN, previous + delta)),
-    )
+    setCurrentNode(customNode)
+    setTypedText('')
+    setChoiceBuffer('')
+    setTotalTyped(0)
+    resetWpm()
     inputRef.current?.focus()
   }
 
   const decreaseLineWidth = () => handleLineLimitChange(-LINE_LIMIT_STEP)
   const increaseLineWidth = () => handleLineLimitChange(LINE_LIMIT_STEP)
+
+  const successorChoices: ChoiceDisplay[] = useMemo(() => {
+    return successors.map((node) => ({
+      id: node.id,
+      preview: createSuccessorPreview(node.text),
+    }))
+  }, [successors])
 
   const showFinal = finalWpm != null
   const wpmLabel = showFinal
@@ -128,16 +183,17 @@ const App = () => {
       />
 
       <TypingCanvas
-        targetText={targetText}
+        nodeText={currentNode.text}
         typedText={typedText}
-        caretIndex={charactersTyped}
-        isComplete={isComplete}
+        isNodeComplete={isNodeComplete}
+        choiceBuffer={choiceBuffer}
+        choices={successorChoices}
         lineLimit={lineLimit}
         inputRef={inputRef}
       />
 
       <div className="flex h-12 items-center justify-center text-xs uppercase tracking-[0.3em] text-gray-600">
-        {typedText.length} / {targetText.length} characters
+        {typedText.length} / {currentNode.text.length} characters
       </div>
     </main>
   )
