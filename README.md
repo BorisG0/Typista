@@ -1,4 +1,4 @@
-# Typist
+# Typista
 
 Minimal single-player typing practice built with React, TypeScript, Vite, and Tailwind CSS.
 

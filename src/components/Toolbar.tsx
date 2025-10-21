@@ -26,7 +26,7 @@ const Toolbar = ({
 
   return (
     <header className="flex h-16 items-center border-b border-white/10 bg-black/95 px-6 text-xs uppercase tracking-[0.3em]">
-      <span className="text-gray-400">Typist</span>
+      <span className="text-gray-400">Typista</span>
 
       <div className="flex flex-1 items-center justify-center">
         <span className={`text-sm tracking-[0.25em] ${wpmClasses}`}>{wpmLabel} WPM</span>
