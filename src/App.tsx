@@ -31,7 +31,15 @@ const App = () => {
 
   const isNodeComplete = typedText.length >= currentNode.text.length
   const successors = currentNode.successors
-  const isGraphComplete = isNodeComplete && successors.length === 0 && choiceBuffer.length === 0
+  const choiceDetails = useMemo(
+    () =>
+      successors.map((node) => ({
+        node,
+        preview: createSuccessorPreview(node.text),
+      })),
+    [successors],
+  )
+  const isGraphComplete = isNodeComplete && choiceDetails.length === 0 && choiceBuffer.length === 0
 
   const { liveWpm, finalWpm, typingStarted, reset: resetWpm } = useWpm(totalTyped, isGraphComplete)
 
@@ -79,7 +87,7 @@ const App = () => {
         return
       }
 
-      if (successors.length === 0) {
+      if (choiceDetails.length === 0) {
         event.preventDefault()
         return
       }
@@ -89,12 +97,10 @@ const App = () => {
       setChoiceBuffer(nextBuffer)
       setTotalTyped((count) => count + 1)
 
-      const matchedNode = successors.find(
-        (successor) => createSuccessorPreview(successor.text) === nextBuffer,
-      )
+      const matchedChoice = choiceDetails.find((choice) => choice.preview === nextBuffer)
 
-      if (matchedNode) {
-        setCurrentNode(matchedNode)
+      if (matchedChoice) {
+        setCurrentNode(matchedChoice.node)
         setTypedText(nextBuffer)
         setChoiceBuffer('')
       }
@@ -102,7 +108,7 @@ const App = () => {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [choiceBuffer, currentNode, resetWpm, successors, typedText])
+  }, [choiceBuffer, choiceDetails, currentNode, resetWpm, typedText])
 
   const handleLineLimitChange = (delta: number) => {
     setLineLimit((previous) =>
@@ -148,12 +154,14 @@ const App = () => {
   const decreaseLineWidth = () => handleLineLimitChange(-LINE_LIMIT_STEP)
   const increaseLineWidth = () => handleLineLimitChange(LINE_LIMIT_STEP)
 
-  const successorChoices: ChoiceDisplay[] = useMemo(() => {
-    return successors.map((node) => ({
-      id: node.id,
-      preview: createSuccessorPreview(node.text),
-    }))
-  }, [successors])
+  const successorChoices: ChoiceDisplay[] = useMemo(
+    () =>
+      choiceDetails.map(({ node, preview }) => ({
+        id: node.id,
+        preview,
+      })),
+    [choiceDetails],
+  )
 
   const showFinal = finalWpm != null
   const wpmLabel = showFinal
