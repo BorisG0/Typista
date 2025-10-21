@@ -40,32 +40,44 @@ export const createSuccessorPreview = (text: string, minLength = 6) => {
   return trimmed.slice(0, endIndex)
 }
 
-const galleryFinal: TypingNode = {
-  id: 'gallery-final',
-  text: 'Inside, a lone painting hums softly as if hiding a restless song.',
+const scriptSuccessSignal: TypingNode = {
+  id: 'script-signal',
+  text: 'The console flashes "Fish connected" and a trout surfaces wearing a tiny headset.',
   successors: [],
 }
 
-const dinerFinal: TypingNode = {
-  id: 'diner-final',
-  text: 'At the counter, an elderly chef slides across a stamped envelope.',
+const scriptSuccessChaos: TypingNode = {
+  id: 'script-chaos',
+  text: 'Instead, the script segfaults, blasting bubbles that startle every duck on the lake.',
   successors: [],
 }
 
-const galleryPath: TypingNode = {
-  id: 'gallery-path',
-  text: 'walks toward the silent art gallery where lights pulse behind frosted glass.',
-  successors: [galleryFinal],
+const gadgetSuccessCatfish: TypingNode = {
+  id: 'gadget-catfish',
+  text: 'The lure chirps in Morse code, coaxing a catfish that returns with a lost keyboard.',
+  successors: [],
 }
 
-const dinerPath: TypingNode = {
-  id: 'diner-path',
-  text: 'heads into the late-night diner where the jukebox plays a forgotten tune.',
-  successors: [dinerFinal],
+const gadgetSuccessSeagull: TypingNode = {
+  id: 'gadget-seagull',
+  text: 'A rogue seagull nabs the glowing lure, triggering a frantic waterside git revert.',
+  successors: [],
+}
+
+const scriptPath: TypingNode = {
+  id: 'script-path',
+  text: 'opens the terminal to run a script that promises to summon cooperative trout.',
+  successors: [scriptSuccessSignal, scriptSuccessChaos],
+}
+
+const gadgetPath: TypingNode = {
+  id: 'gadget-path',
+  text: 'unpacks a 3D-printed lure powered by a USB cable knotted like legacy code.',
+  successors: [gadgetSuccessCatfish, gadgetSuccessSeagull],
 }
 
 export const BRANCHING_ROOT: TypingNode = {
-  id: 'station',
-  text: 'A courier steps off the night bus and pauses at the sleepy station.',
-  successors: [galleryPath, dinerPath],
+  id: 'lakeside',
+  text: 'A programmer marches to the lake balancing a laptop atop a fishing rod.',
+  successors: [scriptPath, gadgetPath],
 }
