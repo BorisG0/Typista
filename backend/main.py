@@ -18,7 +18,7 @@ class Prompt(BaseModel):
 @app.post("/generate")
 async def generate(prompt: Prompt):
     response = client.models.generate_content(
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash-lite",
         contents=f"Continue this naturally in 1-2 sentences: {prompt.text}"
     )
     return {"text": response.text}
