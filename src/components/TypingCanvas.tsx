@@ -13,6 +13,9 @@ type TypingCanvasProps = {
   choices: ChoiceDisplay[]
   lineLimit: number
   inputRef: React.RefObject<HTMLTextAreaElement | null>
+  freestyleMode: boolean
+  freestyleInput: string
+  isGenerating: boolean
 }
 
 const TypingCanvas = ({
@@ -23,6 +26,9 @@ const TypingCanvas = ({
   choices,
   lineLimit,
   inputRef,
+  freestyleMode,
+  freestyleInput,
+  isGenerating,
 }: TypingCanvasProps) => {
   const characters = useMemo(() => {
     const list = nodeText.split('').map((char, index) => {
@@ -49,7 +55,7 @@ const TypingCanvas = ({
     return list
   }, [isNodeComplete, nodeText, typedText])
 
-  const showChoices = choices.length > 0 && (isNodeComplete || choiceBuffer.length > 0)
+  const showChoices = choices.length > 0 && (isNodeComplete || choiceBuffer.length > 0) && !freestyleMode
   const hasMatch = choices.some((choice) => choice.preview.startsWith(choiceBuffer) && choiceBuffer.length > 0)
   const bufferClasses =
     choiceBuffer.length === 0 ? 'text-gray-600' : hasMatch ? 'text-white' : 'text-red-500'
@@ -73,7 +79,25 @@ const TypingCanvas = ({
         />
         {characters}
 
-        {showChoices && (
+        {isGenerating && (
+          <div className="mt-10 text-sm text-gray-500 animate-pulse">
+            Generating...
+          </div>
+        )}
+
+        {freestyleMode && !isGenerating && (
+          <div className="mt-10 space-y-2 text-sm">
+            <div className="text-xs uppercase tracking-[0.2em] text-gray-600">
+              Freestyle — type your prompt, then press Enter
+            </div>
+            <div className="min-h-[1.5rem] whitespace-pre-wrap text-white">
+              {freestyleInput || ' '}
+              <span className="caret-cursor" aria-hidden />
+            </div>
+          </div>
+        )}
+
+        {showChoices && !isGenerating && (
           <div className="mt-10 space-y-4 text-sm">
             <div className={`min-h-[1.5rem] whitespace-pre-wrap ${bufferClasses}`}>
               {choiceBuffer || ' '}

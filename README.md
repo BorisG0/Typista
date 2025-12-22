@@ -2,14 +2,44 @@
 
 Minimal single-player typing practice built with React, TypeScript, Vite, and Tailwind CSS.
 
-## Development
+## Requirements
+
+- Node.js 18+
+- Python 3.10+ (for AI freestyle feature)
+- Gemini API key from [Google AI Studio](https://ai.google.dev/)
+
+## Quick Start
 
 ```bash
+# Frontend
 npm install
-npm run dev
+
+# Backend (one-time setup)
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env  # Add your GEMINI_API_KEY
 ```
 
-By default the dev server listens on port `5173`. Use `npm run dev -- --port <port>` to override when needed.
+## Running
+
+Start both servers in separate terminals:
+
+```bash
+./start-backend.sh   # Runs on port 8000
+./start-frontend.sh  # Runs on port 5173
+```
+
+Or manually:
+
+```bash
+# Terminal 1
+cd backend && source .venv/bin/activate && fastapi dev main.py
+
+# Terminal 2
+npm run dev
+```
 
 ## Build
 
@@ -17,4 +47,4 @@ By default the dev server listens on port `5173`. Use `npm run dev -- --port <po
 npm run build
 ```
 
-This produces a static bundle in `dist/`. The directory is excluded from version control in `.gitignore`.
+Produces a static bundle in `dist/`.

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
+import { generateText } from './api/generate'
 import Toolbar from './components/Toolbar'
 import TypingCanvas from './components/TypingCanvas'
 import type { ChoiceDisplay } from './components/TypingCanvas'
@@ -17,12 +18,18 @@ import type { TypingNode } from './utils/typing'
 const formatWpmValue = (value: number | null) =>
   value == null ? '--' : Math.max(0, Math.round(value)).toString()
 
+const FREESTYLE_PREVIEW = 'free '
+const FREESTYLE_CHOICE: ChoiceDisplay = { id: 'freestyle', preview: FREESTYLE_PREVIEW }
+
 const App = () => {
   const [currentNode, setCurrentNode] = useState<TypingNode>(BRANCHING_ROOT)
   const [typedText, setTypedText] = useState('')
   const [choiceBuffer, setChoiceBuffer] = useState('')
   const [lineLimit, setLineLimit] = useState(48)
   const [totalTyped, setTotalTyped] = useState(0)
+  const [freestyleMode, setFreestyleMode] = useState(false)
+  const [freestyleInput, setFreestyleInput] = useState('')
+  const [isGenerating, setIsGenerating] = useState(false)
   const inputRef = useRef<HTMLTextAreaElement | null>(null)
 
   useEffect(() => {
@@ -39,13 +46,39 @@ const App = () => {
       })),
     [successors],
   )
-  const isGraphComplete = isNodeComplete && choiceDetails.length === 0 && choiceBuffer.length === 0
+  // Graph is never truly "complete" since freestyle is always available
+  // But we consider it complete if no successor choices and not in freestyle mode
+  const isGraphComplete = false
 
   const { liveWpm, finalWpm, typingStarted, reset: resetWpm } = useWpm(totalTyped, isGraphComplete)
 
+  const handleGenerate = async (prompt: string) => {
+    setIsGenerating(true)
+    try {
+      const generatedText = await generateText(prompt)
+      const normalized = normalizePrompt(generatedText)
+      if (normalized.length > 0) {
+        const freestyleNode: TypingNode = {
+          id: `freestyle-${Date.now()}`,
+          text: normalized,
+          successors: [],
+        }
+        setCurrentNode(freestyleNode)
+        setTypedText('')
+        setChoiceBuffer('')
+        setFreestyleMode(false)
+        setFreestyleInput('')
+      }
+    } catch (error) {
+      console.error('Generation failed:', error)
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.metaKey || event.ctrlKey || event.altKey) {
+      if (event.metaKey || event.ctrlKey || event.altKey || isGenerating) {
         return
       }
 
@@ -54,7 +87,40 @@ const App = () => {
         setTypedText('')
         setChoiceBuffer('')
         setTotalTyped(0)
+        setFreestyleMode(false)
+        setFreestyleInput('')
         resetWpm()
+        return
+      }
+
+      // Handle freestyle mode
+      if (freestyleMode) {
+        if (event.key === 'Enter') {
+          event.preventDefault()
+          if (freestyleInput.trim().length > 0) {
+            handleGenerate(freestyleInput.trim())
+          }
+          return
+        }
+
+        if (event.key === 'Backspace') {
+          event.preventDefault()
+          if (freestyleInput.length > 0) {
+            setFreestyleInput(freestyleInput.slice(0, -1))
+            setTotalTyped((count) => Math.max(0, count - 1))
+          } else {
+            // Exit freestyle mode if backspacing with empty input
+            setFreestyleMode(false)
+            setChoiceBuffer(FREESTYLE_PREVIEW.slice(0, -1))
+          }
+          return
+        }
+
+        if (event.key.length === 1) {
+          event.preventDefault()
+          setFreestyleInput(freestyleInput + event.key)
+          setTotalTyped((count) => count + 1)
+        }
         return
       }
 
@@ -87,15 +153,18 @@ const App = () => {
         return
       }
 
-      if (choiceDetails.length === 0) {
-        event.preventDefault()
-        return
-      }
-
+      // Node complete, handle choice selection
       event.preventDefault()
       const nextBuffer = `${choiceBuffer}${char}`
       setChoiceBuffer(nextBuffer)
       setTotalTyped((count) => count + 1)
+
+      // Check for freestyle match
+      if (nextBuffer === FREESTYLE_PREVIEW) {
+        setFreestyleMode(true)
+        setChoiceBuffer('')
+        return
+      }
 
       const matchedChoice = choiceDetails.find((choice) => choice.preview === nextBuffer)
 
@@ -108,7 +177,7 @@ const App = () => {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [choiceBuffer, choiceDetails, currentNode, resetWpm, typedText])
+  }, [choiceBuffer, choiceDetails, currentNode, freestyleInput, freestyleMode, isGenerating, resetWpm, typedText])
 
   const handleLineLimitChange = (delta: number) => {
     setLineLimit((previous) =>
@@ -122,6 +191,8 @@ const App = () => {
     setTypedText('')
     setChoiceBuffer('')
     setTotalTyped(0)
+    setFreestyleMode(false)
+    setFreestyleInput('')
     resetWpm()
     inputRef.current?.focus()
   }
@@ -155,11 +226,13 @@ const App = () => {
   const increaseLineWidth = () => handleLineLimitChange(LINE_LIMIT_STEP)
 
   const successorChoices: ChoiceDisplay[] = useMemo(
-    () =>
-      choiceDetails.map(({ node, preview }) => ({
+    () => [
+      ...choiceDetails.map(({ node, preview }) => ({
         id: node.id,
         preview,
       })),
+      FREESTYLE_CHOICE,
+    ],
     [choiceDetails],
   )
 
@@ -198,6 +271,9 @@ const App = () => {
         choices={successorChoices}
         lineLimit={lineLimit}
         inputRef={inputRef}
+        freestyleMode={freestyleMode}
+        freestyleInput={freestyleInput}
+        isGenerating={isGenerating}
       />
 
       <div className="flex h-12 items-center justify-center text-xs uppercase tracking-[0.3em] text-gray-600">
