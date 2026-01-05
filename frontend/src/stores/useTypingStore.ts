@@ -11,6 +11,7 @@ type TypingState = {
   typedText: string
   choiceBuffer: string
   totalTyped: number
+  typingState: 'initial' | 'typing' | 'choosing'
 
   // Freestyle mode
   freestyleMode: boolean
@@ -19,6 +20,8 @@ type TypingState = {
 
   // WPM tracking
   startTimestamp: number | null
+  pauseStartTime: number | null
+  totalPausedTime: number
   liveWpm: number
   finalWpm: number | null
 
@@ -54,10 +57,13 @@ export const useTypingStore = create<TypingState>((set, get) => ({
   typedText: '',
   choiceBuffer: '',
   totalTyped: 0,
+  typingState: 'initial',
   freestyleMode: false,
   freestyleInput: '',
   isGenerating: false,
   startTimestamp: null,
+  pauseStartTime: null,
+  totalPausedTime: 0,
   liveWpm: 0,
   finalWpm: null,
 
@@ -67,7 +73,7 @@ export const useTypingStore = create<TypingState>((set, get) => ({
 
     // Start WPM timer on first character
     if (state.totalTyped === 0 && state.startTimestamp === null) {
-      set({ startTimestamp: Date.now() })
+      set({ startTimestamp: Date.now(), typingState: 'typing' })
     }
 
     if (state.freestyleMode) {
@@ -80,9 +86,13 @@ export const useTypingStore = create<TypingState>((set, get) => ({
 
     // Typing the main node text
     if (state.typedText.length < state.currentNode.text.length) {
+      const newTypedText = state.typedText + char
+      const isNodeComplete = newTypedText.length === state.currentNode.text.length
       set({
-        typedText: state.typedText + char,
+        typedText: newTypedText,
         totalTyped: state.totalTyped + 1,
+        typingState: isNodeComplete ? 'choosing' : 'typing',
+        pauseStartTime: isNodeComplete ? Date.now() : null,
       })
       return
     }
@@ -109,10 +119,14 @@ export const useTypingStore = create<TypingState>((set, get) => ({
     )
 
     if (matchedChoice) {
+      const pauseDuration = state.pauseStartTime != null ? Date.now() - state.pauseStartTime : 0
       set({
         currentNode: matchedChoice,
         typedText: nextBuffer,
         choiceBuffer: '',
+        typingState: 'typing',
+        pauseStartTime: null,
+        totalPausedTime: state.totalPausedTime + pauseDuration,
       })
     }
   },
@@ -178,11 +192,13 @@ export const useTypingStore = create<TypingState>((set, get) => ({
   },
 
   generateFromPrompt: async (prompt: string) => {
+    const state = get()
     set({ isGenerating: true })
     try {
       const generatedText = await generateText(prompt)
       const normalized = normalizePrompt(generatedText)
       if (normalized.length > 0) {
+        const pauseDuration = state.pauseStartTime != null ? Date.now() - state.pauseStartTime : 0
         const freestyleNode: TypingNode = {
           id: `freestyle-${Date.now()}`,
           text: normalized,
@@ -194,6 +210,9 @@ export const useTypingStore = create<TypingState>((set, get) => ({
           choiceBuffer: '',
           freestyleMode: false,
           freestyleInput: '',
+          typingState: 'typing',
+          pauseStartTime: null,
+          totalPausedTime: state.totalPausedTime + pauseDuration,
         })
       }
     } catch (error) {
@@ -209,9 +228,12 @@ export const useTypingStore = create<TypingState>((set, get) => ({
       typedText: '',
       choiceBuffer: '',
       totalTyped: 0,
+      typingState: 'initial',
       freestyleMode: false,
       freestyleInput: '',
       startTimestamp: null,
+      pauseStartTime: null,
+      totalPausedTime: 0,
       liveWpm: 0,
       finalWpm: null,
     })
@@ -234,7 +256,10 @@ export const useTypingStore = create<TypingState>((set, get) => ({
       typedText: '',
       choiceBuffer: '',
       totalTyped: 0,
+      typingState: 'initial',
       startTimestamp: null,
+      pauseStartTime: null,
+      totalPausedTime: 0,
       liveWpm: 0,
       finalWpm: null,
     })
@@ -249,11 +274,12 @@ export const useTypingStore = create<TypingState>((set, get) => ({
   },
 
   updateWpm: () => {
-    const { totalTyped, startTimestamp } = get()
+    const { totalTyped, startTimestamp, totalPausedTime } = get()
     if (startTimestamp == null || totalTyped <= 0) {
       return
     }
-    const wpm = computeWpm(totalTyped, Date.now() - startTimestamp)
+    const elapsedTime = Date.now() - startTimestamp - totalPausedTime
+    const wpm = computeWpm(totalTyped, elapsedTime)
     set({ liveWpm: wpm })
   },
 }))

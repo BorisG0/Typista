@@ -12,6 +12,7 @@ const App = () => {
   const currentNode = useTypingStore((state) => state.currentNode)
   const typedText = useTypingStore((state) => state.typedText)
   const totalTyped = useTypingStore((state) => state.totalTyped)
+  const typingState = useTypingStore((state) => state.typingState)
   const freestyleMode = useTypingStore((state) => state.freestyleMode)
   const freestyleInput = useTypingStore((state) => state.freestyleInput)
   const isGenerating = useTypingStore((state) => state.isGenerating)
@@ -30,15 +31,15 @@ const App = () => {
   const generateFromPrompt = useTypingStore((state) => state.generateFromPrompt)
   const updateWpm = useTypingStore((state) => state.updateWpm)
 
-  // WPM update interval
+  // WPM update interval (only when actively typing)
   useEffect(() => {
-    if (totalTyped === 0 || finalWpm != null) {
+    if (typingState !== 'typing' || finalWpm != null) {
       return
     }
 
     const intervalId = window.setInterval(updateWpm, 200)
     return () => window.clearInterval(intervalId)
-  }, [totalTyped, finalWpm, updateWpm])
+  }, [typingState, finalWpm, updateWpm])
 
   // Keyboard event handler
   useEffect(() => {
