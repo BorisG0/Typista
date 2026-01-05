@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 
 import Toolbar from './components/Toolbar'
 import TypingCanvas from './components/TypingCanvas'
@@ -8,8 +8,6 @@ const formatWpmValue = (value: number | null) =>
   value == null ? '--' : Math.max(0, Math.round(value)).toString()
 
 const App = () => {
-  const inputRef = useRef<HTMLTextAreaElement | null>(null)
-
   // Subscribe to typing store
   const currentNode = useTypingStore((state) => state.currentNode)
   const typedText = useTypingStore((state) => state.typedText)
@@ -31,11 +29,6 @@ const App = () => {
   const setCustomText = useTypingStore((state) => state.setCustomText)
   const generateFromPrompt = useTypingStore((state) => state.generateFromPrompt)
   const updateWpm = useTypingStore((state) => state.updateWpm)
-
-  // Focus input when node changes
-  useEffect(() => {
-    inputRef.current?.focus()
-  }, [currentNode])
 
   // WPM update interval
   useEffect(() => {
@@ -114,12 +107,10 @@ const App = () => {
     }
 
     setCustomText(response)
-    inputRef.current?.focus()
   }
 
   const handleRestart = () => {
     restart()
-    inputRef.current?.focus()
   }
 
   const showFinal = finalWpm != null
@@ -144,7 +135,7 @@ const App = () => {
         wpmStatus={wpmStatus}
       />
 
-      <TypingCanvas inputRef={inputRef} />
+      <TypingCanvas />
 
       <div className="flex h-12 items-center justify-center text-xs uppercase tracking-[0.3em] text-gray-600">
         {typedText.length} / {currentNode.text.length} characters

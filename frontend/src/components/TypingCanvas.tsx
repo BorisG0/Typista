@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useTypingStore } from '../stores/useTypingStore'
 import { useUIStore } from '../stores/useUIStore'
 import { createSuccessorPreview } from '../utils/typing'
@@ -43,11 +43,9 @@ const Word = ({ chars, showCaret, caretPosition }: WordProps) => {
   )
 }
 
-type TypingCanvasProps = {
-  inputRef: React.RefObject<HTMLTextAreaElement | null>
-}
+const TypingCanvas = () => {
+  const inputRef = useRef<HTMLTextAreaElement | null>(null)
 
-const TypingCanvas = ({ inputRef }: TypingCanvasProps) => {
   // Subscribe to stores
   const currentNode = useTypingStore((state) => state.currentNode)
   const typedText = useTypingStore((state) => state.typedText)
@@ -56,6 +54,11 @@ const TypingCanvas = ({ inputRef }: TypingCanvasProps) => {
   const freestyleInput = useTypingStore((state) => state.freestyleInput)
   const isGenerating = useTypingStore((state) => state.isGenerating)
   const lineLimit = useUIStore((state) => state.lineLimit)
+
+  // Focus input when node changes
+  useEffect(() => {
+    inputRef.current?.focus()
+  }, [currentNode])
 
   // Computed values
   const nodeText = currentNode.text
