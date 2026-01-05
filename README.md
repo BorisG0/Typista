@@ -12,6 +12,7 @@ Minimal single-player typing practice built with React, TypeScript, Vite, and Ta
 
 ```bash
 # Frontend
+cd frontend
 npm install
 
 # Backend (one-time setup)
@@ -38,13 +39,13 @@ Or manually:
 cd backend && source .venv/bin/activate && fastapi dev main.py
 
 # Terminal 2
-npm run dev
+cd frontend && npm run dev
 ```
 
 ## Build
 
 ```bash
-npm run build
+cd frontend && npm run build
 ```
 
-Produces a static bundle in `dist/`.
+Produces a static bundle in `frontend/dist/`.
