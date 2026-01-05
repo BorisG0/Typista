@@ -1,4 +1,7 @@
 import { useMemo } from 'react'
+import { useTypingStore } from '../stores/useTypingStore'
+import { useUIStore } from '../stores/useUIStore'
+import { createSuccessorPreview } from '../utils/typing'
 
 export type ChoiceDisplay = {
   id: string
@@ -41,30 +44,33 @@ const Word = ({ chars, showCaret, caretPosition }: WordProps) => {
 }
 
 type TypingCanvasProps = {
-  nodeText: string
-  typedText: string
-  isNodeComplete: boolean
-  choiceBuffer: string
-  choices: ChoiceDisplay[]
-  lineLimit: number
   inputRef: React.RefObject<HTMLTextAreaElement | null>
-  freestyleMode: boolean
-  freestyleInput: string
-  isGenerating: boolean
 }
 
-const TypingCanvas = ({
-  nodeText,
-  typedText,
-  isNodeComplete,
-  choiceBuffer,
-  choices,
-  lineLimit,
-  inputRef,
-  freestyleMode,
-  freestyleInput,
-  isGenerating,
-}: TypingCanvasProps) => {
+const TypingCanvas = ({ inputRef }: TypingCanvasProps) => {
+  // Subscribe to stores
+  const currentNode = useTypingStore((state) => state.currentNode)
+  const typedText = useTypingStore((state) => state.typedText)
+  const choiceBuffer = useTypingStore((state) => state.choiceBuffer)
+  const freestyleMode = useTypingStore((state) => state.freestyleMode)
+  const freestyleInput = useTypingStore((state) => state.freestyleInput)
+  const isGenerating = useTypingStore((state) => state.isGenerating)
+  const lineLimit = useUIStore((state) => state.lineLimit)
+
+  // Computed values
+  const nodeText = currentNode.text
+  const isNodeComplete = typedText.length >= nodeText.length
+  const choices: ChoiceDisplay[] = useMemo(
+    () => [
+      ...currentNode.successors.map((node) => ({
+        id: node.id,
+        preview: createSuccessorPreview(node.text),
+      })),
+      { id: 'freestyle', preview: 'free ' },
+    ],
+    [currentNode.successors]
+  )
+
   const words = useMemo(() => {
     const result = []
     let currentWord: { char: string; typedChar?: string; index: number }[] = []

@@ -1,9 +1,7 @@
+import { useUIStore } from '../stores/useUIStore'
+import { LINE_LIMIT_MAX, LINE_LIMIT_MIN } from '../utils/typing'
+
 type ToolbarProps = {
-  lineLimit: number
-  canDecrease: boolean
-  canIncrease: boolean
-  onDecrease: () => void
-  onIncrease: () => void
   onRestart: () => void
   onCustomText: () => void
   wpmLabel: string
@@ -11,16 +9,19 @@ type ToolbarProps = {
 }
 
 const Toolbar = ({
-  lineLimit,
-  canDecrease,
-  canIncrease,
-  onDecrease,
-  onIncrease,
   onRestart,
   onCustomText,
   wpmLabel,
   wpmStatus,
 }: ToolbarProps) => {
+  const lineLimit = useUIStore((state) => state.lineLimit)
+  const increaseLineLimit = useUIStore((state) => state.increaseLineLimit)
+  const decreaseLineLimit = useUIStore((state) => state.decreaseLineLimit)
+  
+  // Computed values
+  const canIncrease = useUIStore((state) => state.lineLimit < LINE_LIMIT_MAX)
+  const canDecrease = useUIStore((state) => state.lineLimit > LINE_LIMIT_MIN)
+
   const wpmClasses =
     wpmStatus === 'live' ? 'text-white animate-pulse-slow' : 'text-white'
 
@@ -39,7 +40,7 @@ const Toolbar = ({
             <button
               type="button"
               className="rounded-full px-2 text-base text-gray-400 transition hover:text-white disabled:opacity-30"
-              onClick={onDecrease}
+              onClick={decreaseLineLimit}
               disabled={!canDecrease}
               aria-label="Decrease line width"
             >
@@ -51,7 +52,7 @@ const Toolbar = ({
             <button
               type="button"
               className="rounded-full px-2 text-base text-gray-400 transition hover:text-white disabled:opacity-30"
-              onClick={onIncrease}
+              onClick={increaseLineLimit}
               disabled={!canIncrease}
               aria-label="Increase line width"
             >
