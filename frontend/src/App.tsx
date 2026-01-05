@@ -123,7 +123,7 @@ const App = () => {
 
   const wpmStatus: 'idle' | 'live' | 'final' = showFinal
     ? 'final'
-    : typingStarted
+    : typingState === 'typing'
       ? 'live'
       : 'idle'
 
@@ -134,6 +134,7 @@ const App = () => {
         onCustomText={handleCustomText}
         wpmLabel={wpmLabel}
         wpmStatus={wpmStatus}
+        typingState={typingState}
       />
 
       <TypingCanvas />

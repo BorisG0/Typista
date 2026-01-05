@@ -6,6 +6,7 @@ type ToolbarProps = {
   onCustomText: () => void
   wpmLabel: string
   wpmStatus: 'idle' | 'live' | 'final'
+  typingState: 'initial' | 'typing' | 'choosing'
 }
 
 const Toolbar = ({
@@ -13,6 +14,7 @@ const Toolbar = ({
   onCustomText,
   wpmLabel,
   wpmStatus,
+  typingState,
 }: ToolbarProps) => {
   const lineLimit = useUIStore((state) => state.lineLimit)
   const increaseLineLimit = useUIStore((state) => state.increaseLineLimit)
@@ -25,9 +27,22 @@ const Toolbar = ({
   const wpmClasses =
     wpmStatus === 'live' ? 'text-white animate-pulse-slow' : 'text-white'
 
+  const stateColors = {
+    initial: 'text-gray-600',
+    typing: 'text-green-500',
+    choosing: 'text-yellow-500',
+  }
+
   return (
     <header className="flex h-16 items-center border-b border-white/10 bg-black/95 px-6 text-xs uppercase tracking-[0.3em]">
       <span className="text-gray-400">Typista</span>
+      
+      <div className="ml-6 flex items-center gap-2 text-[0.6rem] tracking-[0.15em]">
+        <span className="text-gray-600">State:</span>
+        <span className={`font-medium ${stateColors[typingState]}`}>
+          {typingState}
+        </span>
+      </div>
 
       <div className="flex flex-1 items-center justify-center">
         <span className={`text-sm tracking-[0.25em] ${wpmClasses}`}>{wpmLabel} WPM</span>
