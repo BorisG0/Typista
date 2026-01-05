@@ -5,6 +5,41 @@ export type ChoiceDisplay = {
   preview: string
 }
 
+type WordProps = {
+  chars: { char: string; typedChar?: string; index: number }[]
+  showCaret?: boolean
+  caretPosition?: number
+}
+
+const Word = ({ chars, showCaret, caretPosition }: WordProps) => {
+  return (
+    <span style={{ display: 'inline-block', whiteSpace: 'nowrap' }}>
+      {chars.map(({ char, typedChar, index }, localIndex) => {
+        const styles =
+          typedChar == null
+            ? 'text-gray-600'
+            : typedChar === char
+              ? 'text-white'
+              : 'text-red-500'
+
+        return (
+          <span key={index}>
+            {showCaret && localIndex === caretPosition && (
+              <span className="caret-cursor" aria-hidden />
+            )}
+            <span className={`rounded px-0.5 transition-colors ${styles}`}>
+              {char}
+            </span>
+          </span>
+        )
+      })}
+      {showCaret && caretPosition === chars.length && (
+        <span className="caret-cursor" aria-hidden />
+      )}
+    </span>
+  )
+}
+
 type TypingCanvasProps = {
   nodeText: string
   typedText: string
@@ -30,29 +65,70 @@ const TypingCanvas = ({
   freestyleInput,
   isGenerating,
 }: TypingCanvasProps) => {
-  const characters = useMemo(() => {
-    const list = nodeText.split('').map((char, index) => {
+  const words = useMemo(() => {
+    const result = []
+    let currentWord: { char: string; typedChar?: string; index: number }[] = []
+    let wordStartIndex = 0
+
+    nodeText.split('').forEach((char, index) => {
       const typedChar = typedText[index]
 
-      const styles =
-        typedChar == null
-          ? 'text-gray-600'
-          : typedChar === char
-            ? 'text-white'
-            : 'text-red-500'
+      if (char === ' ' || char === '\n') {
+        // Render accumulated word
+        if (currentWord.length > 0) {
+          const caretInWord = !isNodeComplete && typedText.length >= wordStartIndex && typedText.length < index
+          result.push(
+            <Word
+              key={`word-${wordStartIndex}`}
+              chars={currentWord}
+              showCaret={caretInWord}
+              caretPosition={caretInWord ? typedText.length - wordStartIndex : undefined}
+            />
+          )
+          currentWord = []
+        }
 
-      return (
-        <span key={`char-${index}`} className={`rounded px-0.5 transition-colors ${styles}`}>
-          {char === ' ' ? ' ' : char}
-        </span>
-      )
+        // Render space/newline with caret if needed
+        const styles =
+          typedChar == null
+            ? 'text-gray-600'
+            : typedChar === char
+              ? 'text-white'
+              : 'text-red-500'
+
+        const showCaretHere = !isNodeComplete && typedText.length === index
+
+        result.push(
+          <span key={`space-${index}`}>
+            {showCaretHere && <span className="caret-cursor" aria-hidden />}
+            <span className={`rounded px-0.5 transition-colors ${styles}`}>
+              {char}
+            </span>
+          </span>
+        )
+        wordStartIndex = index + 1
+      } else {
+        if (currentWord.length === 0) {
+          wordStartIndex = index
+        }
+        currentWord.push({ char, typedChar, index })
+      }
     })
 
-    if (!isNodeComplete) {
-      list.splice(typedText.length, 0, <span key="caret" className="caret-cursor" aria-hidden />)
+    // Render final word
+    if (currentWord.length > 0) {
+      const caretInWord = !isNodeComplete && typedText.length >= wordStartIndex
+      result.push(
+        <Word
+          key={`word-${wordStartIndex}`}
+          chars={currentWord}
+          showCaret={caretInWord}
+          caretPosition={caretInWord ? typedText.length - wordStartIndex : undefined}
+        />
+      )
     }
 
-    return list
+    return result
   }, [isNodeComplete, nodeText, typedText])
 
   const showChoices = choices.length > 0 && (isNodeComplete || choiceBuffer.length > 0) && !freestyleMode
@@ -67,7 +143,7 @@ const TypingCanvas = ({
       role="presentation"
     >
       <div
-        className="relative mx-auto break-words whitespace-pre-wrap text-2xl tracking-wide text-gray-500 leading-[1.6]"
+        className="relative mx-auto whitespace-pre-wrap text-2xl tracking-wide text-gray-500 leading-[1.6]"
         style={{ maxWidth: `${lineLimit}ch` }}
       >
         <textarea
@@ -77,7 +153,7 @@ const TypingCanvas = ({
           readOnly
           aria-hidden
         />
-        {characters}
+        {words}
 
         {isGenerating && (
           <div className="mt-10 text-sm text-gray-500 animate-pulse">
