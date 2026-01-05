@@ -1,28 +1,42 @@
 import { useUIStore } from '../stores/useUIStore'
+import { useTypingStore } from '../stores/useTypingStore'
 import { LINE_LIMIT_MAX, LINE_LIMIT_MIN } from '../utils/typing'
 
-type ToolbarProps = {
-  onRestart: () => void
-  onCustomText: () => void
-  wpmLabel: string
-  wpmStatus: 'idle' | 'live' | 'final'
-  typingState: 'initial' | 'typing' | 'choosing'
-}
+const formatWpmValue = (value: number | null) =>
+  value == null ? '--' : Math.max(0, Math.round(value)).toString()
 
-const Toolbar = ({
-  onRestart,
-  onCustomText,
-  wpmLabel,
-  wpmStatus,
-  typingState,
-}: ToolbarProps) => {
+const Toolbar = () => {
+  // UI Store
   const lineLimit = useUIStore((state) => state.lineLimit)
   const increaseLineLimit = useUIStore((state) => state.increaseLineLimit)
   const decreaseLineLimit = useUIStore((state) => state.decreaseLineLimit)
   
+  // Typing Store
+  const typingState = useTypingStore((state) => state.typingState)
+  const liveWpm = useTypingStore((state) => state.liveWpm)
+  const finalWpm = useTypingStore((state) => state.finalWpm)
+  const startTimestamp = useTypingStore((state) => state.startTimestamp)
+  const totalTyped = useTypingStore((state) => state.totalTyped)
+  const restart = useTypingStore((state) => state.restart)
+  const setCustomText = useTypingStore((state) => state.setCustomText)
+  
   // Computed values
-  const canIncrease = useUIStore((state) => state.lineLimit < LINE_LIMIT_MAX)
-  const canDecrease = useUIStore((state) => state.lineLimit > LINE_LIMIT_MIN)
+  const canIncrease = lineLimit < LINE_LIMIT_MAX
+  const canDecrease = lineLimit > LINE_LIMIT_MIN
+  const typingStarted = startTimestamp != null && totalTyped > 0
+  
+  const showFinal = finalWpm != null
+  const wpmLabel = showFinal
+    ? formatWpmValue(finalWpm)
+    : typingStarted
+      ? formatWpmValue(liveWpm)
+      : '--'
+
+  const wpmStatus: 'idle' | 'live' | 'final' = showFinal
+    ? 'final'
+    : typingState === 'typing'
+      ? 'live'
+      : 'idle'
 
   const wpmClasses =
     wpmStatus === 'live' ? 'text-white animate-pulse-slow' : 'text-white'
@@ -31,6 +45,13 @@ const Toolbar = ({
     initial: 'text-gray-600',
     typing: 'text-green-500',
     choosing: 'text-yellow-500',
+  }
+
+  const handleCustomText = () => {
+    const response = window.prompt('Paste the text you would like to practice:')
+    if (response != null) {
+      setCustomText(response)
+    }
   }
 
   return (
@@ -80,14 +101,14 @@ const Toolbar = ({
           <button
             type="button"
             className="rounded-full border border-white/20 px-4 py-1.5 text-white transition hover:bg-white/10"
-            onClick={onRestart}
+            onClick={restart}
           >
             Restart
           </button>
           <button
             type="button"
             className="rounded-full border border-white bg-white/90 px-4 py-1.5 text-black transition hover:bg-white/80 hover:text-black"
-            onClick={onCustomText}
+            onClick={handleCustomText}
           >
             Custom Text
           </button>
